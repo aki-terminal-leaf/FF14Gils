@@ -1,113 +1,130 @@
-export const XIVAPI_ITEM_ENDPOINT = 'https://v2.xivapi.com/api/sheet/Item';
-export const SUPPORTED_XIVAPI_LANGUAGES = ['ja', 'en', 'fr', 'de'];
+export const UNIVERSALIS_HOME = 'https://universalis.app/';
+export const SUPPORTED_ITEM_DATA_LANGUAGES = ['ja', 'en', 'de', 'fr', 'chs', 'ko', 'tc'];
 
-const DEFAULT_LANGUAGE = 'ja';
-const DEFAULT_CONCURRENCY = 8;
-const RETRY_DELAYS_MS = [500, 1500];
-
-export function buildXivapiItemNameUrl(itemId, { language = DEFAULT_LANGUAGE } = {}) {
-  const normalizedItemId = normalizeItemId(itemId);
-  if (!normalizedItemId) {
-    throw new Error('itemId must be numeric');
-  }
-
-  const url = new URL(`${XIVAPI_ITEM_ENDPOINT}/${normalizedItemId}`);
-  url.searchParams.set('fields', 'Name');
-  url.searchParams.set('language', normalizeXivapiLanguage(language));
-
-  return url.toString();
-}
+const DEFAULT_LANGUAGE = 'tc';
+const APP_CHUNK_PATTERN = /\/_next\/static\/chunks\/pages\/_app-[^"']+\.js/;
 
 export async function fetchItemNames(
   itemIds,
   {
-    concurrency = DEFAULT_CONCURRENCY,
     fetchImpl = fetch,
+    itemData,
     language = DEFAULT_LANGUAGE,
     log = () => {},
   } = {},
 ) {
   const ids = normalizeItemIds(itemIds);
-  const results = {};
-  let nextIndex = 0;
-  const workerCount = Math.max(1, Math.min(Number(concurrency) || 1, ids.length));
-
-  async function worker() {
-    while (nextIndex < ids.length) {
-      const id = ids[nextIndex];
-      nextIndex += 1;
-
-      try {
-        const name = await fetchItemName(id, { fetchImpl, language });
-        if (name) {
-          results[id] = name;
-        }
-      } catch (error) {
-        log(`XIVAPI item name failed for ${id}: ${error.message}`);
-      }
-    }
-  }
-
-  await Promise.all(Array.from({ length: workerCount }, worker));
+  const data =
+    itemData ?? (await fetchUniversalisItemData({ fetchImpl, language, log }));
 
   return Object.fromEntries(
-    Object.entries(results).sort(([left], [right]) => Number(left) - Number(right)),
+    ids
+      .map((id) => [id, data[id]?.name?.trim()])
+      .filter(([, name]) => name)
+      .sort(([left], [right]) => Number(left) - Number(right)),
   );
 }
 
-export function fetchJapaneseItemNames(itemIds, options = {}) {
-  return fetchItemNames(itemIds, { ...options, language: DEFAULT_LANGUAGE });
+export async function fetchUniversalisItemData({
+  fetchImpl = fetch,
+  language = DEFAULT_LANGUAGE,
+  log = () => {},
+} = {}) {
+  const normalizedLanguage = normalizeItemDataLanguage(language);
+  const appChunkUrl = await resolveUniversalisAppChunkUrl({ fetchImpl });
+  const response = await fetchImpl(appChunkUrl, {
+    headers: {
+      'user-agent': 'FF14Gils Universalis item data fetcher',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Universalis app chunk failed: ${response.status} ${response.statusText}`);
+  }
+
+  const script = await response.text();
+  const data = extractUniversalisItemData(script, normalizedLanguage);
+
+  log(`Loaded ${Object.keys(data).length} ${normalizedLanguage} item records from Universalis`);
+
+  return data;
+}
+
+export function extractUniversalisItemData(script, language = DEFAULT_LANGUAGE) {
+  const normalizedLanguage = normalizeItemDataLanguage(language);
+  const moduleStart = script.indexOf('rV:function');
+  if (moduleStart === -1) {
+    throw new Error('Universalis item data module was not found');
+  }
+  const moduleEnd = script.indexOf('function ae', moduleStart);
+  const source = moduleEnd === -1 ? script.slice(moduleStart) : script.slice(moduleStart, moduleEnd);
+  const varByLanguage = {
+    ja: 'J',
+    en: 'w',
+    de: 'A',
+    fr: 'M',
+    chs: 'x',
+    ko: 'G',
+    tc: 'R',
+  };
+  const variable = varByLanguage[normalizedLanguage];
+  const pattern = new RegExp(`${variable}=JSON\\.parse\\('((?:\\\\.|[^\\\\'])*)'\\)`);
+  const match = source.match(pattern);
+
+  if (!match) {
+    throw new Error(`Universalis ${normalizedLanguage} item data bundle was not found`);
+  }
+
+  return JSON.parse(evaluateJsStringLiteral(match[1]));
+}
+
+export async function resolveUniversalisAppChunkUrl({
+  fetchImpl = fetch,
+  homeUrl = UNIVERSALIS_HOME,
+} = {}) {
+  const response = await fetchImpl(homeUrl, {
+    headers: {
+      'user-agent': 'FF14Gils Universalis item data fetcher',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Universalis homepage failed: ${response.status} ${response.statusText}`);
+  }
+
+  const html = await response.text();
+  const path = html.match(APP_CHUNK_PATTERN)?.[0];
+  if (!path) {
+    throw new Error('Universalis _app chunk path was not found');
+  }
+
+  return new URL(path, homeUrl).toString();
+}
+
+export function normalizeItemDataLanguage(language) {
+  const value = String(language ?? '').trim().toLowerCase().replace('_', '-');
+  if (value === 'zh' || value === 'zh-tw' || value === 'traditional-chinese') return 'tc';
+  if (value === 'zh-cn' || value === 'cn') return 'chs';
+
+  return SUPPORTED_ITEM_DATA_LANGUAGES.includes(value) ? value : DEFAULT_LANGUAGE;
 }
 
 export function normalizeXivapiLanguage(language) {
-  const value = String(language ?? '').trim().toLowerCase().split(/[-_]/)[0];
+  return normalizeItemDataLanguage(language);
+}
 
-  return SUPPORTED_XIVAPI_LANGUAGES.includes(value) ? value : DEFAULT_LANGUAGE;
+export function fetchJapaneseItemNames(itemIds, options = {}) {
+  return fetchItemNames(itemIds, { ...options, language: 'ja' });
 }
 
 export function normalizeItemIds(itemIds) {
   return [
     ...new Set(
-      [...itemIds]
+      [...(itemIds ?? [])]
         .map((itemId) => normalizeItemId(itemId))
         .filter(Boolean),
     ),
   ].sort((left, right) => Number(left) - Number(right));
-}
-
-async function fetchItemName(itemId, { fetchImpl, language }) {
-  const url = buildXivapiItemNameUrl(itemId, { language });
-
-  for (const [attempt, delayMs] of [0, ...RETRY_DELAYS_MS].entries()) {
-    try {
-      const response = await fetchImpl(url, {
-        headers: {
-          'user-agent': 'FF14Gils item name fetcher',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const name = typeof data?.fields?.Name === 'string' ? data.fields.Name.trim() : '';
-
-      if (!name) {
-        throw new Error('Name is empty');
-      }
-
-      return name;
-    } catch (error) {
-      if (attempt === RETRY_DELAYS_MS.length) {
-        throw error;
-      }
-
-      await delay(delayMs);
-    }
-  }
-
-  return '';
 }
 
 function normalizeItemId(itemId) {
@@ -115,8 +132,6 @@ function normalizeItemId(itemId) {
   return /^\d+$/.test(value) ? value : '';
 }
 
-function delay(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+function evaluateJsStringLiteral(value) {
+  return Function(`"use strict"; return '${value}';`)();
 }

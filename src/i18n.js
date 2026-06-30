@@ -11,10 +11,7 @@ const TRANSLATIONS = {
       gilUnit: 'gil',
     },
     dataCenterRegions: {
-      europe: '歐洲資料中心',
-      japan: '日本資料中心',
-      northAmerica: '北美資料中心',
-      oceania: '大洋洲資料中心',
+      traditionalChinese: '繁體中文伺服器',
       other: '其他資料中心',
     },
     meta: {
@@ -22,7 +19,7 @@ const TRANSLATIONS = {
       description:
         'FF14 繁體中文玩家用的市場看板，可從銷售額、價格與成交量找出適合販售的金策候選。',
       ogDescription:
-        '從市場銷售量與價格趨勢找出比較容易賣出的金策候選。預設 Typhon，聚焦國際服資料。',
+        '從市場銷售量與價格趨勢找出比較容易賣出的金策候選。預設伊弗利特，聚焦繁體中文伺服器資料。',
       imageAlt: 'FF14Gils 繁體中文市場賺錢看板圖片',
       locale: 'zh_TW',
       inLanguage: 'zh-TW',
@@ -109,10 +106,7 @@ const TRANSLATIONS = {
       gilUnit: 'ギル',
     },
     dataCenterRegions: {
-      europe: '欧州データセンター',
-      japan: '日本データセンター',
-      northAmerica: '北米データセンター',
-      oceania: 'オセアニアデータセンター',
+      traditionalChinese: '繁体字中国語サーバー',
       other: 'その他のデータセンター',
     },
     meta: {
@@ -120,7 +114,7 @@ const TRANSLATIONS = {
       description:
         'FF14のマーケット売上、相場、販売数から、全DCの金策候補を探せるダークテーマのマーケットダッシュボードです。',
       ogDescription:
-        'マーケットの売れ行きと相場から、売りやすい金策候補を探せます。Typhon初期表示、国際版サーバー対応。',
+        'マーケットの売れ行きと相場から、売りやすい金策候補を探せます。繁体字中国語サーバー対応。',
       imageAlt: 'FF14Gilsのマーケット金策ダッシュボード画像',
       locale: 'ja_JP',
       inLanguage: 'ja-JP',
@@ -207,10 +201,7 @@ const TRANSLATIONS = {
       gilUnit: 'gil',
     },
     dataCenterRegions: {
-      europe: 'European Data Centers',
-      japan: 'Japanese Data Centers',
-      northAmerica: 'North American Data Centers',
-      oceania: 'Oceanic Data Centers',
+      traditionalChinese: 'Traditional Chinese Servers',
       other: 'Other Data Centers',
     },
     meta: {
@@ -218,7 +209,7 @@ const TRANSLATIONS = {
       description:
         'A dark market dashboard for finding profitable Final Fantasy XIV items from sales, prices, and purchase volume across all data centers.',
       ogDescription:
-        'Find easier-to-sell market opportunities from sales volume and price trends. Starts on Typhon and uses global server data.',
+        'Find easier-to-sell market opportunities from sales volume and price trends for Traditional Chinese servers.',
       imageAlt: 'FF14Gils market profit dashboard image',
       locale: 'en_US',
       inLanguage: 'en-US',

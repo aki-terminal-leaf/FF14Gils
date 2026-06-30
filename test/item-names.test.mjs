@@ -2,71 +2,49 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import {
-  buildXivapiItemNameUrl,
+  extractUniversalisItemData,
   fetchItemNames,
-  fetchJapaneseItemNames,
-  normalizeXivapiLanguage,
+  normalizeItemDataLanguage,
+  resolveUniversalisAppChunkUrl,
 } from '../scripts/item-name-api.mjs';
 
-describe('buildXivapiItemNameUrl', () => {
-  it('XIVAPI v2 の日本語アイテム名取得URLを作る', () => {
-    assert.equal(
-      buildXivapiItemNameUrl('51269'),
-      'https://v2.xivapi.com/api/sheet/Item/51269?fields=Name&language=ja',
-    );
-  });
+const tcItemBundle =
+  "rV:function(){return ae},x=JSON.parse('{\"2\":{\"id\":2,\"name\":\"火之碎晶\",\"description\":\"簡中\"}}'),R=JSON.parse('{\"2\":{\"id\":2,\"name\":\"火之碎晶\",\"description\":\"繁中\"},\"3\":{\"id\":3,\"name\":\"冰之碎晶\",\"description\":\"繁中\"}}');function ae(e,i){return re(e,i)}";
 
-  it('XIVAPI v2 の取得言語を指定できる', () => {
-    assert.equal(
-      buildXivapiItemNameUrl('51269', { language: 'en' }),
-      'https://v2.xivapi.com/api/sheet/Item/51269?fields=Name&language=en',
-    );
-    assert.equal(normalizeXivapiLanguage('fr'), 'fr');
-    assert.equal(normalizeXivapiLanguage('invalid'), 'ja');
-  });
-});
-
-describe('fetchItemNames', () => {
-  it('重複IDをまとめ、XIVAPIのNameをID別に返す', async () => {
-    const requestedUrls = [];
-    const names = await fetchItemNames(['51269', '15157', '51269'], {
-      fetchImpl: async (url) => {
-        requestedUrls.push(url);
-        const id = url.match(/Item\/(\d+)/)?.[1];
-
-        return {
-          ok: true,
-          status: 200,
-          statusText: 'OK',
-          json: async () => ({
-            row_id: Number(id),
-            fields: {
-              Name: id === '51269' ? 'ガーデン・パーティライト' : 'ビーチチェア',
-            },
-          }),
-        };
-      },
-    });
-
-    assert.equal(requestedUrls.length, 2);
-    assert.deepEqual(names, {
-      15157: 'ビーチチェア',
-      51269: 'ガーデン・パーティライト',
-    });
-  });
-
-  it('既存の日本語名取得関数も互換維持する', async () => {
-    const names = await fetchJapaneseItemNames(['51269'], {
+describe('Universalis item data', () => {
+  it('首頁 HTML から Universalis _app chunk URL を解決する', async () => {
+    const url = await resolveUniversalisAppChunkUrl({
+      homeUrl: 'https://universalis.app/',
       fetchImpl: async () => ({
         ok: true,
-        status: 200,
-        statusText: 'OK',
-        json: async () => ({
-          fields: { Name: 'ガーデン・パーティライト' },
-        }),
+        text: async () =>
+          '<script src="/_next/static/chunks/pages/_app-1234567890abcdef.js"></script>',
       }),
     });
 
-    assert.deepEqual(names, { 51269: 'ガーデン・パーティライト' });
+    assert.equal(
+      url,
+      'https://universalis.app/_next/static/chunks/pages/_app-1234567890abcdef.js',
+    );
+  });
+
+  it('Universalis 前端資料包から tc 道具名を取り出す', () => {
+    const data = extractUniversalisItemData(tcItemBundle, 'zh-TW');
+
+    assert.equal(data['2'].name, '火之碎晶');
+    assert.equal(data['2'].description, '繁中');
+    assert.equal(normalizeItemDataLanguage('zh-TW'), 'tc');
+  });
+
+  it('重複IDをまとめ、繁中道具名をID別に返す', async () => {
+    const names = await fetchItemNames(['2', '3', '2'], {
+      itemData: extractUniversalisItemData(tcItemBundle, 'tc'),
+      language: 'tc',
+    });
+
+    assert.deepEqual(names, {
+      2: '火之碎晶',
+      3: '冰之碎晶',
+    });
   });
 });

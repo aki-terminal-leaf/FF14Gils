@@ -15,20 +15,24 @@ import {
   resolveDefaultWorld,
 } from '../src/worlds.js';
 import {
-  buildMarketsharePayload,
-  SADDLEBAG_MARKETSHARE_ENDPOINT,
+  DEFAULT_MAX_ITEMS,
+  UNIVERSALIS_MARKETABLE_ENDPOINT,
+  buildUniversalisAggregatedUrl,
+  chunkItemIds,
+  normalizeItemIds,
+  normalizeUniversalisAggregatedResponse,
 } from './marketshare-api.mjs';
 import {
   fetchItemNames,
-  normalizeItemIds,
-  normalizeXivapiLanguage,
+  fetchUniversalisItemData,
+  normalizeItemDataLanguage,
 } from './item-name-api.mjs';
 import { fetchWithRetry } from './retry-fetch.mjs';
 
 const dataDir = fileURLToPath(new URL('../data/', import.meta.url));
 const outputPath = fileURLToPath(new URL('../data/marketshare.json', import.meta.url));
-const itemNameLanguage = normalizeXivapiLanguage(
-  process.env.FF14GILS_ITEM_NAME_LANGUAGE ?? 'ja',
+const itemNameLanguage = normalizeItemDataLanguage(
+  process.env.FF14GILS_ITEM_NAME_LANGUAGE ?? 'tc',
 );
 const itemNameCachePath = fileURLToPath(
   new URL(`../data/item-names-${itemNameLanguage}.json`, import.meta.url),
@@ -42,32 +46,37 @@ const retryOptions = {
 const worlds = parseWorldList(process.env.FF14GILS_WORLDS);
 const periods = parseSalesPeriodList(process.env.FF14GILS_PERIODS);
 const query = {
-  salesAmount: process.env.FF14GILS_SALES_AMOUNT ?? 3,
-  averagePrice: process.env.FF14GILS_AVERAGE_PRICE ?? 10000,
+  salesAmount: process.env.FF14GILS_SALES_AMOUNT ?? 1,
+  averagePrice: process.env.FF14GILS_AVERAGE_PRICE ?? 1,
   preset: process.env.FF14GILS_PRESET ?? 'all',
   sortBy: process.env.FF14GILS_SORT_BY ?? 'marketValue',
-  customFilters: process.env.FF14GILS_CUSTOM_FILTERS ?? '',
+  filters: [0],
 };
+const maxItems = Number(process.env.FF14GILS_MAX_ITEMS ?? DEFAULT_MAX_ITEMS);
+const itemLimit = Number(process.env.FF14GILS_ITEM_LIMIT ?? DEFAULT_MAX_ITEMS);
 const defaultWorld = resolveDefaultWorld(worlds, process.env.FF14GILS_SERVER);
 
+const itemData = await loadItemData();
+const marketableItemIds = await fetchMarketableItemIds();
+const itemIds = selectItemIds(marketableItemIds, itemData, itemLimit);
+const itemNames = await resolveItemNames(itemIds, itemData);
 const marketshareResults = [];
 
 for (const world of worlds) {
   for (const period of periods) {
-    const result = await fetchWorldMarketshare(world, period);
+    const result = await fetchWorldMarketshare(world, period, itemIds, itemNames, itemData);
     marketshareResults.push(result);
     console.log(
-      `Fetched ${result.apiResponse.data.length} marketshare items for ${world} (${period.label})`,
+      `Fetched ${result.apiResponse.data.length} Universalis items for ${world} (${period.label})`,
     );
   }
 }
 
-const itemNames = await resolveItemNames(marketshareResults);
 const snapshots = marketshareResults.map(({ apiResponse, query: snapshotQuery }) =>
   createSnapshot({
     query: snapshotQuery,
     response: apiResponse,
-    source: SADDLEBAG_MARKETSHARE_ENDPOINT,
+    source: 'https://universalis.app/api/v2/aggregated',
     itemNames,
     itemNameLanguage,
   }),
@@ -111,32 +120,72 @@ console.log(
   `Wrote ${snapshots.length} period snapshots. Default: ${defaultSnapshot.query.server} (${defaultSnapshot.query.periodKey})`,
 );
 
-async function fetchWorldMarketshare(world, period) {
-  const payload = buildMarketsharePayload({
-    ...query,
-    server: world,
-    timePeriod: period.hours,
+async function loadItemData() {
+  const cached = await readJsonIfExists(itemNameCachePath);
+  if (Object.values(cached)[0]?.name) return cached;
+
+  return fetchUniversalisItemData({
+    language: itemNameLanguage,
+    log: (message) => console.warn(message),
   });
+}
+
+async function fetchMarketableItemIds() {
   const response = await fetchWithRetry(
-    SADDLEBAG_MARKETSHARE_ENDPOINT,
+    UNIVERSALIS_MARKETABLE_ENDPOINT,
     {
-      method: 'POST',
       headers: {
-        'content-type': 'application/json',
-        'user-agent': 'FF14Gils GitHub Pages data fetcher',
+        'user-agent': 'FF14Gils Universalis marketable fetcher',
       },
-      body: JSON.stringify(payload),
     },
     retryOptions,
   );
 
   if (!response.ok) {
-    throw new Error(
-      `Saddlebag Exchange API failed for ${world}: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Universalis marketable API failed: ${response.status} ${response.statusText}`);
   }
 
-  const apiResponse = await response.json();
+  return normalizeItemIds(await response.json());
+}
+
+function selectItemIds(marketableItemIds, itemData, limit) {
+  const candidates = marketableItemIds.filter((itemId) => itemData[String(itemId)]);
+  return candidates.slice(0, Math.max(1, Number(limit) || DEFAULT_MAX_ITEMS));
+}
+
+async function fetchWorldMarketshare(world, period, itemIds, itemNames, itemData) {
+  const results = [];
+
+  for (const chunk of chunkItemIds(itemIds)) {
+    const url = buildUniversalisAggregatedUrl(world, chunk);
+    const response = await fetchWithRetry(
+      url,
+      {
+        headers: {
+          'user-agent': 'FF14Gils Universalis data fetcher',
+        },
+      },
+      retryOptions,
+    );
+
+    if (!response.ok) {
+      throw new Error(`Universalis aggregated API failed for ${world}: ${response.status} ${response.statusText}`);
+    }
+
+    const payload = await response.json();
+    results.push(...(Array.isArray(payload?.results) ? payload.results : []));
+  }
+
+  const apiResponse = normalizeUniversalisAggregatedResponse(
+    { results },
+    {
+      itemNames,
+      itemData,
+      maxItems,
+      periodHours: period.hours,
+      sortBy: query.sortBy,
+    },
+  );
   assertMarketshareResponse(apiResponse);
 
   return {
@@ -145,38 +194,36 @@ async function fetchWorldMarketshare(world, period) {
       server: world,
       periodKey: period.key,
       periodLabel: period.label,
-      timePeriod: payload.time_period,
-      salesAmount: payload.sales_amount,
-      averagePrice: payload.average_price,
-      filters: payload.filters,
-      sortBy: payload.sort_by,
+      timePeriod: period.hours,
     },
     apiResponse,
   };
 }
 
-async function resolveItemNames(results) {
-  const itemIds = normalizeItemIds(
-    results.flatMap(({ apiResponse }) =>
-      apiResponse.data.map((item) => item.itemID ?? item.itemId),
-    ),
-  );
+async function resolveItemNames(itemIds, itemData) {
   const cachedNames = await readJsonIfExists(itemNameCachePath);
-  const missingIds = itemIds.filter((itemId) => !cachedNames[itemId]);
+  const cachedPlainNames = Object.fromEntries(
+    Object.entries(cachedNames)
+      .filter(([, value]) => typeof value === 'string')
+      .map(([itemId, name]) => [itemId, name]),
+  );
+  const missingIds = itemIds
+    .map(String)
+    .filter((itemId) => !cachedPlainNames[itemId]);
 
   if (missingIds.length > 0) {
     console.log(
-      `Fetching ${missingIds.length} ${itemNameLanguage} item names from XIVAPI`,
+      `Resolving ${missingIds.length} ${itemNameLanguage} item names from Universalis item data`,
     );
   }
 
   const fetchedNames = await fetchItemNames(missingIds, {
+    itemData,
     language: itemNameLanguage,
-    log: (message) => console.warn(message),
   });
   const itemNames = Object.fromEntries(
-    Object.entries({ ...cachedNames, ...fetchedNames })
-      .filter(([itemId]) => itemIds.includes(itemId))
+    Object.entries({ ...cachedPlainNames, ...fetchedNames })
+      .filter(([itemId]) => itemIds.map(String).includes(itemId))
       .sort(([left], [right]) => Number(left) - Number(right)),
   );
 

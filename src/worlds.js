@@ -1,4 +1,4 @@
-export const DEFAULT_WORLD = 'Typhon';
+export const DEFAULT_WORLD = '伊弗利特';
 export const DEFAULT_SALES_PERIOD = '7d';
 
 export const SALES_PERIODS = [
@@ -11,121 +11,15 @@ const SALES_PERIOD_BY_KEY = new Map(SALES_PERIODS.map((period) => [period.key, p
 
 export const WORLD_DATA_CENTERS = [
   {
-    name: 'Aether',
-    worlds: [
-      'Adamantoise',
-      'Cactuar',
-      'Faerie',
-      'Gilgamesh',
-      'Jenova',
-      'Midgardsormr',
-      'Sargatanas',
-      'Siren',
-    ],
-  },
-  {
-    name: 'Crystal',
-    worlds: [
-      'Balmung',
-      'Brynhildr',
-      'Coeurl',
-      'Diabolos',
-      'Goblin',
-      'Malboro',
-      'Mateus',
-      'Zalera',
-    ],
-  },
-  {
-    name: 'Dynamis',
-    worlds: [
-      'Cuchulainn',
-      'Golem',
-      'Halicarnassus',
-      'Kraken',
-      'Maduin',
-      'Marilith',
-      'Rafflesia',
-      'Seraph',
-    ],
-  },
-  {
-    name: 'Primal',
-    worlds: [
-      'Behemoth',
-      'Excalibur',
-      'Exodus',
-      'Famfrit',
-      'Hyperion',
-      'Lamia',
-      'Leviathan',
-      'Ultros',
-    ],
-  },
-  {
-    name: 'Chaos',
-    worlds: [
-      'Cerberus',
-      'Louisoix',
-      'Moogle',
-      'Omega',
-      'Phantom',
-      'Ragnarok',
-      'Sagittarius',
-      'Spriggan',
-    ],
-  },
-  {
-    name: 'Light',
-    worlds: [
-      'Alpha',
-      'Lich',
-      'Odin',
-      'Phoenix',
-      'Raiden',
-      'Shiva',
-      'Twintania',
-      'Zodiark',
-    ],
-  },
-  {
-    name: 'Materia',
-    worlds: ['Bismarck', 'Ravana', 'Sephirot', 'Sophia', 'Zurvan'],
-  },
-  {
-    name: 'Elemental',
-    worlds: ['Aegis', 'Atomos', 'Carbuncle', 'Garuda', 'Gungnir', 'Kujata', 'Tonberry', 'Typhon'],
-  },
-  {
-    name: 'Gaia',
-    worlds: ['Alexander', 'Bahamut', 'Durandal', 'Fenrir', 'Ifrit', 'Ridill', 'Tiamat', 'Ultima'],
-  },
-  {
-    name: 'Mana',
-    worlds: ['Anima', 'Asura', 'Chocobo', 'Hades', 'Ixion', 'Masamune', 'Pandaemonium', 'Titan'],
-  },
-  {
-    name: 'Meteor',
-    worlds: ['Belias', 'Mandragora', 'Ramuh', 'Shinryu', 'Unicorn', 'Valefor', 'Yojimbo', 'Zeromus'],
+    name: '陸行鳥',
+    worlds: ['伊弗利特', '迦樓羅', '利維坦', '鳳凰', '奧汀', '巴哈姆特', '拉姆', '泰坦'],
   },
 ];
 
 export const WORLD_DATA_CENTER_REGIONS = [
   {
-    key: 'northAmerica',
-    dataCenters: ['Aether', 'Primal', 'Crystal', 'Dynamis'],
-  },
-  {
-    key: 'europe',
-    dataCenters: ['Chaos', 'Light'],
-  },
-  {
-    key: 'japan',
-    dataCenters: ['Elemental', 'Gaia', 'Mana', 'Meteor'],
-  },
-  {
-    key: 'oceania',
-    dataCenters: ['Materia'],
+    key: 'traditionalChinese',
+    dataCenters: ['陸行鳥'],
   },
 ];
 
@@ -143,11 +37,15 @@ const WORLD_DATA_CENTER_REGION_BY_NAME = new Map(
 );
 
 export function worldSlug(world) {
-  return String(world ?? '')
-    .trim()
+  const normalizedWorld = String(world ?? '').trim();
+  const knownSlug = WORLD_SLUGS.get(normalizedWorld);
+  if (knownSlug) return knownSlug;
+
+  return encodeURIComponent(normalizedWorld)
     .toLowerCase()
+    .replace(/%/g, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/^-+|-+$/g, '') || 'world';
 }
 
 export function buildWorldSnapshotPath(world) {
@@ -363,3 +261,14 @@ function normalizeWorldPeriodPaths(world, periods) {
 function cloneSalesPeriods() {
   return SALES_PERIODS.map((period) => ({ ...period }));
 }
+
+const WORLD_SLUGS = new Map([
+  ['伊弗利特', 'ifrit'],
+  ['迦樓羅', 'garuda'],
+  ['利維坦', 'leviathan'],
+  ['鳳凰', 'phoenix'],
+  ['奧汀', 'odin'],
+  ['巴哈姆特', 'bahamut'],
+  ['拉姆', 'ramuh'],
+  ['泰坦', 'titan'],
+]);

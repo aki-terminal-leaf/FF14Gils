@@ -3,12 +3,13 @@ import { access, readdir, readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 
 describe('app data loading contract', () => {
-  it('GitHub Pages上のUI配信対象は生成済みJSONだけを読み、Saddlebag APIへ直接POSTしない', async () => {
+  it('GitHub Pages上のUI配信対象は生成済みJSONだけを読み、外部市場APIへ直接POSTしない', async () => {
     const sources = await readBrowserSources();
     const joined = sources.map((source) => source.content).join('\n');
 
     assert.match(joined, /data\/worlds\.json/);
     assert.doesNotMatch(joined, /api\.saddlebagexchange\.com\/api\/ffxivmarketshare/);
+    assert.doesNotMatch(joined, /universalis\.app\/api/);
     assert.doesNotMatch(joined, /method\s*:\s*['"]POST['"]/i);
   });
 
@@ -159,10 +160,10 @@ describe('app data loading contract', () => {
     assert.match(legal, /本文提及的公司名稱、產品名稱與系統名稱等，均為各權利人的商標或註冊商標。/);
     assert.match(legal, /Copyright \(C\) SQUARE ENIX CO\., LTD\. All Rights Reserved\./);
     assert.match(legal, /非官方粉絲網站/);
-    assert.match(legal, /Saddlebag Exchange API/);
-    assert.doesNotMatch(legal, /Universalis API/);
-    assert.match(legal, /XIVAPI v2/);
-    assert.match(legal, /不保存說明文字、圖示或詳細遊戲資料。/);
+    assert.match(legal, /Universalis API/);
+    assert.match(legal, /Universalis 前端道具資料/);
+    assert.doesNotMatch(legal, /Saddlebag Exchange API/);
+    assert.doesNotMatch(legal, /XIVAPI v2/);
     assert.match(build, /'legal\.html'/);
   });
 
@@ -258,17 +259,18 @@ describe('app data loading contract', () => {
     assert.doesNotMatch(script, /FF14GILS_PRESET\s*\?\?\s*['"]housing['"]/);
   });
 
-  it('データ生成スクリプトとREADMEはUniversalis API直利用を説明しない', async () => {
+  it('データ生成スクリプトとREADMEはUniversalis繁中服資料源を説明する', async () => {
     const script = await readFile(
       new URL('../scripts/fetch-marketshare.mjs', import.meta.url),
       'utf8',
     );
     const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
 
-    assert.doesNotMatch(script, /universalis\.app\/api/i);
-    assert.doesNotMatch(script, /UNIVERSALIS/i);
+    assert.match(script, /UNIVERSALIS_MARKETABLE_ENDPOINT/);
+    assert.match(script, /normalizeUniversalisAggregatedResponse/);
     assert.doesNotMatch(script, /entriesWithin/i);
-    assert.doesNotMatch(readme, /Universalis API/);
+    assert.match(readme, /Universalis API/);
+    assert.match(readme, /繁體中文伺服器/);
     assert.doesNotMatch(readme, /30 day history/i);
     assert.doesNotMatch(readme, /30d/);
   });

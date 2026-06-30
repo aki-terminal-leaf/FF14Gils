@@ -11,7 +11,10 @@ import {
   stateLabel,
   summarizeMarketshare,
 } from '../src/marketshare.js';
-import { buildMarketsharePayload } from '../scripts/marketshare-api.mjs';
+import {
+  buildUniversalisAggregatedUrl,
+  normalizeUniversalisAggregatedResponse,
+} from '../scripts/marketshare-api.mjs';
 
 const apiResponse = {
   data: [
@@ -46,66 +49,41 @@ const apiResponse = {
   ],
 };
 
-describe('buildMarketsharePayload', () => {
-  it('プリセット未指定時は全カテゴリを取得する', () => {
-    const payload = buildMarketsharePayload({
-      server: 'Hades',
-      timePeriod: 168,
-      salesAmount: 3,
-      averagePrice: 10000,
-      sortBy: 'marketValue',
-    });
-
-    assert.deepEqual(payload.filters, CATEGORY_PRESETS.all.filters);
-  });
-
-  it('Saddlebag Exchangeの必須パラメータに変換する', () => {
-    const payload = buildMarketsharePayload({
-      server: 'Carbuncle',
-      timePeriod: '168',
-      salesAmount: '3',
-      averagePrice: '10000',
-      preset: 'housing',
-      sortBy: 'marketValue',
-    });
-
-    assert.deepEqual(payload, {
-      server: 'Carbuncle',
-      time_period: 168,
-      sales_amount: 3,
-      average_price: 10000,
-      filters: CATEGORY_PRESETS.housing.filters,
-      sort_by: 'marketValue',
-    });
-  });
-
-  it('カスタムカテゴリIDを重複なしの数値配列にする', () => {
-    const payload = buildMarketsharePayload({
-      server: 'Chocobo',
-      timePeriod: 24,
-      salesAmount: 5,
-      averagePrice: 5000,
-      preset: 'custom',
-      customFilters: '56, 65\n66 65',
-      sortBy: 'quantitySold',
-    });
-
-    assert.deepEqual(payload.filters, [56, 65, 66]);
-  });
-
-  it('空のワールド名や不正な数値は送信前に拒否する', () => {
-    assert.throws(
-      () =>
-        buildMarketsharePayload({
-          server: '   ',
-          timePeriod: '0',
-          salesAmount: 'x',
-          averagePrice: '10000',
-          preset: 'housing',
-          sortBy: 'marketValue',
-        }),
-      /server|timePeriod|salesAmount/,
+describe('Universalis market data adapter', () => {
+  it('繁中服ワールド名と複数 item id から aggregated URL を作る', () => {
+    assert.equal(
+      buildUniversalisAggregatedUrl('伊弗利特', ['3', '2', '2']),
+      'https://universalis.app/api/v2/aggregated/%E4%BC%8A%E5%BC%97%E5%88%A9%E7%89%B9/2,3',
     );
+  });
+
+  it('Universalis aggregated response を既存 UI の marketshare schema に変換する', () => {
+    const response = normalizeUniversalisAggregatedResponse({
+      results: [
+        {
+          itemId: 2,
+          nq: {
+            minListing: { dc: { price: 100 } },
+            averageSalePrice: { dc: { price: 120 } },
+            dailySaleVelocity: { dc: { quantity: 2 } },
+          },
+          hq: {
+            minListing: { dc: { price: 130 } },
+            averageSalePrice: { dc: { price: 140 } },
+            dailySaleVelocity: { dc: { quantity: 1 } },
+          },
+        },
+      ],
+    }, {
+      itemNames: { 2: '火之碎晶' },
+      periodHours: 48,
+    });
+
+    assertMarketshareResponse(response);
+    assert.equal(response.data[0].itemID, '2');
+    assert.equal(response.data[0].name, '火之碎晶');
+    assert.equal(response.data[0].minPrice, 100);
+    assert.equal(response.data[0].quantitySold, 6);
   });
 });
 

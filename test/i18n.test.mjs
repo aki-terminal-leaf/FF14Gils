@@ -50,19 +50,13 @@ describe('translate', () => {
     assert.equal(translate('en', 'ui.dataCenterLabel'), 'Data center');
     assert.equal(translate('ja', 'ui.dataCenterSelect'), 'DCを選択');
     assert.equal(translate('en', 'ui.dataCenterSelect'), 'Select data center');
-    assert.equal(translate('zh', 'dataCenterRegions.northAmerica'), '北美資料中心');
-    assert.equal(translate('ja', 'dataCenterRegions.northAmerica'), '北米データセンター');
-    assert.equal(translate('en', 'dataCenterRegions.northAmerica'), 'North American Data Centers');
-    assert.equal(translate('ja', 'dataCenterRegions.europe'), '欧州データセンター');
-    assert.equal(translate('en', 'dataCenterRegions.europe'), 'European Data Centers');
-    assert.equal(translate('ja', 'dataCenterRegions.japan'), '日本データセンター');
-    assert.equal(translate('en', 'dataCenterRegions.japan'), 'Japanese Data Centers');
-    assert.equal(translate('ja', 'dataCenterRegions.oceania'), 'オセアニアデータセンター');
-    assert.equal(translate('en', 'dataCenterRegions.oceania'), 'Oceanic Data Centers');
+    assert.equal(translate('zh', 'dataCenterRegions.traditionalChinese'), '繁體中文伺服器');
+    assert.equal(translate('ja', 'dataCenterRegions.traditionalChinese'), '繁体字中国語サーバー');
+    assert.equal(translate('en', 'dataCenterRegions.traditionalChinese'), 'Traditional Chinese Servers');
     assert.equal(translate('en', 'table.marketValue'), 'Sales');
     assert.match(translate('zh', 'meta.description'), /繁體中文玩家/);
-    assert.match(translate('ja', 'meta.description'), /全DC/);
-    assert.match(translate('en', 'meta.description'), /all data centers/);
+    assert.match(translate('ja', 'meta.description'), /マーケット/);
+    assert.match(translate('en', 'meta.description'), /Final Fantasy XIV/);
   });
 
   it('件数などの値を埋め込める', () => {

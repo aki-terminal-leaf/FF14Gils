@@ -9,11 +9,10 @@ import {
 } from '../src/preferences.js';
 
 const worldIndex = {
-  defaultWorld: 'Hades',
+  defaultWorld: '伊弗利特',
   worlds: [
-    { name: 'Carbuncle', path: 'data/worlds/carbuncle.json' },
-    { name: 'Hades', path: 'data/worlds/hades.json' },
-    { name: 'Chocobo', path: 'data/worlds/chocobo.json' },
+    { name: '伊弗利特', path: 'data/worlds/ifrit.json' },
+    { name: '泰坦', path: 'data/worlds/titan.json' },
   ],
 };
 
@@ -28,23 +27,23 @@ describe('readCookieValue', () => {
 
 describe('resolvePreferredWorld', () => {
   it('保存済みワールドが有効ならそれを優先する', () => {
-    assert.equal(resolvePreferredWorld(worldIndex, `${WORLD_COOKIE_NAME}=Chocobo`), 'Chocobo');
+    assert.equal(resolvePreferredWorld(worldIndex, `${WORLD_COOKIE_NAME}=泰坦`), '泰坦');
   });
 
-  it('保存済みワールドがない場合はHadesを初期表示にする', () => {
-    assert.equal(resolvePreferredWorld(worldIndex, ''), 'Hades');
+  it('保存済みワールドがない場合は伊弗利特を初期表示にする', () => {
+    assert.equal(resolvePreferredWorld(worldIndex, ''), '伊弗利特');
   });
 
   it('存在しない保存済みワールドは無視する', () => {
-    assert.equal(resolvePreferredWorld(worldIndex, `${WORLD_COOKIE_NAME}=Missing`), 'Hades');
+    assert.equal(resolvePreferredWorld(worldIndex, `${WORLD_COOKIE_NAME}=Missing`), '伊弗利特');
   });
 });
 
 describe('buildWorldPreferenceCookie', () => {
   it('選択したワールドをCookieへ保存する文字列を作る', () => {
     assert.equal(
-      buildWorldPreferenceCookie('Hades'),
-      `${WORLD_COOKIE_NAME}=Hades; Max-Age=15552000; Path=/; SameSite=Lax`,
+      buildWorldPreferenceCookie('泰坦'),
+      `${WORLD_COOKIE_NAME}=%E6%B3%B0%E5%9D%A6; Max-Age=15552000; Path=/; SameSite=Lax`,
     );
   });
 });
