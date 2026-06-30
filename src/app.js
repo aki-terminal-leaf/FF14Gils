@@ -49,7 +49,7 @@ const elements = {
 const state = {
   currentGeneratedAt: '',
   items: [],
-  language: 'ja',
+  language: 'zh',
   snapshots: new Map(),
   sortBy: 'opportunityScore',
   sortDirection: 'desc',

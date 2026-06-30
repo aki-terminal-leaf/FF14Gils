@@ -1,44 +1,42 @@
-# FF14Gils
+# FF14Gils 繁體中文版
 
-FF14 のマーケットデータから、金策候補を探すための GitHub Pages 向け静的サイトです。
+FF14Gils 是用 GitHub Pages 部署的靜態市場看板，用來從 FINAL FANTASY XIV 國際服市場資料中找出比較容易販售的金策候選。這個 fork 聚焦繁體中文玩家常用的 Elemental DC，預設世界為 `Typhon`。
 
-## 概要
+## 版本範圍
 
-- 利用者ブラウザは GitHub Pages 上の静的ファイルと生成済み JSON だけを読み込みます。
-- マーケットデータの取得と JSON 生成は GitHub Actions またはローカルの `npm run fetch:data` で行います。
-- 初期表示は `Hades`、売上期間は 1日、3日、7日に対応しています。
-- 公式 Lodestone のワールド構成に合わせ、Aether、Crystal、Dynamis、Primal、Chaos、Light、Materia、Elemental、Gaia、Mana、Meteor の全DC 85ワールドを対象にします。
-- DC選択は北米、欧州、日本、オセアニアの見出し付きで選べます。選んだDCでワールド候補を絞り込み、期間選択、検索、状態フィルタ、最低販売数フィルタ、列ソートに対応しています。
-- UI 表示言語は日本語と英語を切り替えできます。選択した言語は Cookie に保存されます。
+- UI 預設語言為繁體中文，並保留日本語、English 切換。
+- GitHub Actions 預設產生 Elemental DC 的 `Aegis`、`Atomos`、`Carbuncle`、`Garuda`、`Gungnir`、`Kujata`、`Tonberry`、`Typhon` 市場快照。
+- 初始顯示世界為 `Typhon`，銷售期間支援 1 天、3 天、7 天。
+- 使用者瀏覽器只讀取 GitHub Pages 上的靜態檔與預先產生 JSON，不會直接呼叫外部市場 API。
+- 道具名稱資料來源目前沒有官方繁中欄位，因此繁中 UI 預設以英文道具名為主，日文名作為輔助搜尋／顯示資料。
 
-## データと権利について
+## 資料與權利
 
-FF14Gils は FINAL FANTASY XIV の非公式ファンサイトです。SQUARE ENIX CO., LTD. とは関係ありません。
-FINAL FANTASY XIV に関する名称、データ、画像、その他の権利は SQUARE ENIX CO., LTD. に帰属します。
+FF14Gils 是 FINAL FANTASY XIV 的非官方粉絲網站，與 SQUARE ENIX CO., LTD. 無關。FINAL FANTASY XIV 相關名稱、資料、圖片與其他權利均屬 SQUARE ENIX CO., LTD. 所有。
 
-データ生成では以下の公開データ元を利用します。
+資料生成使用下列公開資料來源：
 
-- Saddlebag Exchange API: 1日、3日、7日のマーケット集計候補を取得します。
-- XIVAPI v2: アイテム名の取得だけに利用します。説明文、アイコン、詳細なゲームデータは保存しません。
+- Saddlebag Exchange API：取得 1 天、3 天、7 天市場統計候選資料。
+- XIVAPI v2：僅用於取得道具名稱，不保存說明文字、圖示或詳細遊戲資料。
 
-外部データ元の仕様や利用条件は変更される可能性があります。運用時は各サービスの公開ドキュメントと利用条件を確認し、必要に応じて取得方法や表示内容を見直します。
+外部資料來源的規格與使用條件可能變更，正式公開前請確認各資料來源條款。上游 repo 未附明確開源授權檔，若要長期公開維護 derivative version，建議先向原作者確認授權。
 
-## アーキテクチャ
+## 架構
 
 ```mermaid
 flowchart LR
-  subgraph Browser["利用者ブラウザ"]
+  subgraph Browser["使用者瀏覽器"]
     Ui["index.html / styles.css / src/app.js"]
     Cookie["ff14gils_world / ff14gils_language Cookie"]
   end
 
-  subgraph Pages["GitHub Pages 静的配信"]
+  subgraph Pages["GitHub Pages 靜態配信"]
     Static["HTML / CSS / JS / assets"]
     WorldIndex["data/worlds.json"]
     Snapshots["data/worlds/*.json / data/marketshare.json"]
   end
 
-  subgraph Pipeline["GitHub Actions / ローカル生成"]
+  subgraph Pipeline["GitHub Actions / 本機產生"]
     Workflow[".github/workflows/pages.yml"]
     Tests["npm test"]
     FetchData["npm run fetch:data"]
@@ -48,13 +46,11 @@ flowchart LR
 
   Saddlebag["Saddlebag Exchange API"]
   Xivapi["XIVAPI v2"]
-  Analytics["Google Analytics 4"]
 
   Ui -->|"GET same-origin"| Static
   Ui -->|"GET same-origin"| WorldIndex
   Ui -->|"GET same-origin"| Snapshots
   Ui -->|"read / write"| Cookie
-  Ui -->|"gtag.js / page_view"| Analytics
 
   Workflow --> Tests
   Workflow --> FetchData
@@ -67,11 +63,7 @@ flowchart LR
   Dist -->|"deploy"| Pages
 ```
 
-ブラウザから外部 API へ直接 POST せず、GitHub Pages で配信される同一オリジンの JSON を表示します。
-ワールド選択は全DC 85ワールドを1つの長いプルダウンにせず、北米、欧州、日本、オセアニアの見出し付きDC選択から絞り込んで、該当DCのワールドだけを表示します。
-アクセス計測は Google Analytics 4 の Measurement ID `G-VH5GMQMZ34` を `gtag.js` で読み込みます。
-
-## 開発コマンド
+## 開發指令
 
 ```powershell
 npm test
@@ -80,29 +72,19 @@ npm run build
 npm run serve
 ```
 
-favicon を再生成する場合:
+## 環境變數
 
-```powershell
-npm run favicon:generate
-```
+`npm run fetch:data` 可用下列環境變數調整資料產生範圍：
 
-## 環境変数
+- `FF14GILS_SERVER`：初始顯示世界，繁中版預設 `Typhon`。
+- `FF14GILS_WORLDS`：要產生的世界清單，使用逗號分隔。未指定時會產生所有國際服世界。
+- `FF14GILS_PERIODS`：要產生的銷售期間，可用 `1d`、`3d`、`7d`。
+- `FF14GILS_PRESET`：`all`、`housing`、`materials`、`consumables`、`collectibles`、`custom`。
+- `FF14GILS_CUSTOM_FILTERS`：`custom` 用的分類 ID。
+- `FF14GILS_FETCH_RETRIES`：外部 API 暫時性 `429` / `5xx` 回應的重試次數。
+- `FF14GILS_FETCH_RETRY_DELAY_MS`：外部 API 重試的初始等待時間。
+- `FF14GILS_ITEM_NAME_LANGUAGE`：XIVAPI v2 道具名稱語言，支援 `ja`、`en`、`fr`、`de`。目前不支援 `zh-TW`。
 
-`npm run fetch:data` は主に以下の環境変数で取得条件を変更できます。
+## 部署
 
-- `FF14GILS_SERVER`: 初期表示するワールド名。
-- `FF14GILS_WORLDS`: 生成するワールド名のカンマ区切り。未指定時は全DC 85ワールド。
-- `FF14GILS_PERIODS`: 生成する売上期間。`1d`、`3d`、`7d`。
-- `FF14GILS_PRESET`: `all`、`housing`、`materials`、`consumables`、`collectibles`、`custom`。
-- `FF14GILS_CUSTOM_FILTERS`: `custom` 用のカテゴリ ID。
-- `FF14GILS_FETCH_RETRIES`: 外部APIの一時的な `429` / `5xx` 応答を再試行する回数。
-- `FF14GILS_FETCH_RETRY_DELAY_MS`: 外部APIリトライの初回待機時間。
-- `FF14GILS_ITEM_NAME_LANGUAGE`: XIVAPI v2 から取得するアイテム名の言語。`ja`、`en`、`fr`、`de`。
-
-データ生成時の Saddlebag Exchange API への通信は、一時的な `429` / `5xx` 応答を短くリトライします。
-既定では `ja` のアイテム名を `data/item-names-ja.json` にキャッシュします。英語UIでは Saddlebag 由来の英語名を優先表示し、日本語UIでは XIVAPI 由来の日本語名を優先表示します。
-全DC生成時は 85ワールド x 3期間の最大255スナップショットを生成します。
-
-## デプロイ
-
-`.github/workflows/pages.yml` が `npm test`、`npm run fetch:data`、`npm run build` を実行し、生成された `dist/` を GitHub Pages へデプロイします。
+`.github/workflows/pages.yml` 會執行 `npm test`、`npm run fetch:data`、`npm run build`，並將 `dist/` 部署到 GitHub Pages。繁中版 workflow 已預設使用 Elemental DC 與 `Typhon` 初始世界。

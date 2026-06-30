@@ -13,7 +13,6 @@ const entries = [
   'assets',
   'robots.txt',
   'sitemap.xml',
-  'googled9f512eea3a99dc1.html',
 ];
 
 await rm(dist, { recursive: true, force: true });

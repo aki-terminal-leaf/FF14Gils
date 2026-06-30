@@ -27,13 +27,13 @@ describe('app data loading contract', () => {
     assert.match(app, /filterWorldsByDataCenter/);
   });
 
-  it('日本語と英語を切り替えるUIとi18n契約を持つ', async () => {
+  it('繁體中文、日本語、英語を切り替えるUIとi18n契約を持つ', async () => {
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
     const app = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
 
-    assert.match(html, /<html lang="ja">/);
+    assert.match(html, /<html lang="zh-TW">/);
     assert.match(html, /data-language-select/);
-    assert.match(html, /<option value="ja">日本語<\/option>/);
+    assert.match(html, /<option value="zh">繁體中文<\/option>[\s\S]*<option value="ja">日本語<\/option>/);
     assert.match(html, /<option value="en">English<\/option>/);
     assert.match(html, /data-i18n="ui\.filterTitle"/);
     assert.match(html, /data-i18n="table\.marketValue"/);
@@ -49,9 +49,9 @@ describe('app data loading contract', () => {
     const app = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
 
     assert.match(html, /data-period-select/);
-    assert.match(html, /1日/);
-    assert.match(html, /3日/);
-    assert.match(html, /7日/);
+    assert.match(html, /1 天/);
+    assert.match(html, /3 天/);
+    assert.match(html, /7 天/);
     assert.doesNotMatch(html, /1か月/);
     assert.match(app, /periodSelect/);
     assert.match(app, /selectedPeriod/);
@@ -62,7 +62,7 @@ describe('app data loading contract', () => {
     const app = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
 
     assert.match(html, /data-updated-at/);
-    assert.match(html, /最終更新/);
+    assert.match(html, /最後更新/);
     assert.match(app, /updatedAt/);
   });
 
@@ -96,7 +96,7 @@ describe('app data loading contract', () => {
     assert.match(html, /class="dashboard-grid"/);
     assert.match(html, /class="[^"]*\bfilter-panel\b[^"]*"/);
     assert.match(html, /class="[^"]*\bresults-panel\b[^"]*"/);
-    assert.match(html, /選んだワールドは次回も使えます/);
+    assert.match(html, /選過的世界下次會自動沿用/);
   });
 
   it('ダークデザインを使う', async () => {
@@ -123,11 +123,11 @@ describe('app data loading contract', () => {
   it('OGPとSEO向けのメタ情報を持つ', async () => {
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 
-    assert.match(html, /<meta name="description" content="FF14のマーケット/);
-    assert.match(html, /<link rel="canonical" href="https:\/\/jinwktk\.github\.io\/FF14Gils\/"/);
+    assert.match(html, /<meta name="description" content="FF14 繁體中文玩家用/);
+    assert.match(html, /<link rel="canonical" href="https:\/\/aki-terminal-leaf\.github\.io\/FF14Gils\/"/);
     assert.match(html, /<meta property="og:type" content="website"/);
     assert.match(html, /<meta property="og:title" content="FF14Gils/);
-    assert.match(html, /<meta property="og:image" content="https:\/\/jinwktk\.github\.io\/FF14Gils\/assets\/og-image\.png"/);
+    assert.match(html, /<meta property="og:image" content="https:\/\/aki-terminal-leaf\.github\.io\/FF14Gils\/assets\/og-image\.png"/);
     assert.match(html, /<meta property="og:image:width" content="1200"/);
     assert.match(html, /<meta property="og:image:height" content="630"/);
     assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
@@ -140,12 +140,12 @@ describe('app data loading contract', () => {
     const sitemap = await readFile(new URL('../sitemap.xml', import.meta.url), 'utf8');
 
     assert.match(html, /<meta name="googlebot" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1"/);
-    assert.match(html, /<link rel="sitemap" type="application\/xml" title="Sitemap" href="https:\/\/jinwktk\.github\.io\/FF14Gils\/sitemap\.xml"/);
+    assert.match(html, /<link rel="sitemap" type="application\/xml" title="Sitemap" href="https:\/\/aki-terminal-leaf\.github\.io\/FF14Gils\/sitemap\.xml"/);
     assert.match(robots, /User-agent:\s*\*/);
     assert.match(robots, /Allow:\s*\//);
-    assert.match(robots, /Sitemap:\s*https:\/\/jinwktk\.github\.io\/FF14Gils\/sitemap\.xml/);
-    assert.match(sitemap, /<loc>https:\/\/jinwktk\.github\.io\/FF14Gils\/<\/loc>/);
-    assert.match(sitemap, /<loc>https:\/\/jinwktk\.github\.io\/FF14Gils\/legal\.html<\/loc>/);
+    assert.match(robots, /Sitemap:\s*https:\/\/aki-terminal-leaf\.github\.io\/FF14Gils\/sitemap\.xml/);
+    assert.match(sitemap, /<loc>https:\/\/aki-terminal-leaf\.github\.io\/FF14Gils\/<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/aki-terminal-leaf\.github\.io\/FF14Gils\/legal\.html<\/loc>/);
   });
 
   it('権利表記とデータ元を説明する公開ページを持つ', async () => {
@@ -154,40 +154,29 @@ describe('app data loading contract', () => {
     const build = await readFile(new URL('../scripts/build.mjs', import.meta.url), 'utf8');
 
     assert.match(html, /href="legal\.html"/);
-    assert.match(legal, /<title>権利表記とデータについて \| FF14Gils<\/title>/);
+    assert.match(legal, /<title>權利聲明與資料來源 \| FF14Gils<\/title>/);
     assert.match(legal, /&copy; 2026 FF14Gils/);
-    assert.match(legal, /記載されている会社名・製品名・システム名などは、各社の商標、または登録商標です。/);
+    assert.match(legal, /本文提及的公司名稱、產品名稱與系統名稱等，均為各權利人的商標或註冊商標。/);
     assert.match(legal, /Copyright \(C\) SQUARE ENIX CO\., LTD\. All Rights Reserved\./);
-    assert.match(legal, /非公式ファンサイト/);
+    assert.match(legal, /非官方粉絲網站/);
     assert.match(legal, /Saddlebag Exchange API/);
     assert.doesNotMatch(legal, /Universalis API/);
     assert.match(legal, /XIVAPI v2/);
-    assert.match(legal, /説明文、アイコン、詳細なゲームデータは保存しません。/);
+    assert.match(legal, /不保存說明文字、圖示或詳細遊戲資料。/);
     assert.match(build, /'legal\.html'/);
   });
 
-  it('Google Search ConsoleのHTML確認ファイルをPages配信対象に含める', async () => {
+  it('fork版では上流のGoogle Search Console確認ファイルを配信しない', async () => {
     const build = await readFile(new URL('../scripts/build.mjs', import.meta.url), 'utf8');
-    const verification = await readFile(
-      new URL('../googled9f512eea3a99dc1.html', import.meta.url),
-      'utf8',
-    );
 
-    assert.equal(verification.trim(), 'google-site-verification: googled9f512eea3a99dc1.html');
-    assert.match(build, /'googled9f512eea3a99dc1\.html'/);
+    assert.doesNotMatch(build, /googled9f512eea3a99dc1\.html/);
   });
 
-  it('Google Analytics 4の計測タグを持つ', async () => {
+  it('fork版では上流のGoogle Analytics 4計測タグを持たない', async () => {
     const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 
-    assert.match(
-      html,
-      /<script async src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=G-VH5GMQMZ34"><\/script>/,
-    );
-    assert.match(html, /window\.dataLayer = window\.dataLayer \|\| \[\];/);
-    assert.match(html, /function gtag\(\)\{dataLayer\.push\(arguments\);\}/);
-    assert.match(html, /gtag\('config', 'G-VH5GMQMZ34'\);/);
-    assert.equal(html.match(/G-VH5GMQMZ34/g)?.length, 2);
+    assert.doesNotMatch(html, /G-VH5GMQMZ34/);
+    assert.doesNotMatch(html, /googletagmanager\.com\/gtag/);
   });
 
   it('ヘッダーにKo-fiの支援リンクを持つ', async () => {
@@ -197,7 +186,7 @@ describe('app data loading contract', () => {
     assert.match(html, /class="kofi-link"/);
     assert.match(html, /href="https:\/\/ko-fi\.com\/jinnymeia"/);
     assert.match(html, /"sameAs": \["https:\/\/ko-fi\.com\/jinnymeia"\]/);
-    assert.match(html, /aria-label="Ko-fiで支援する"/);
+    assert.match(html, /aria-label="在 Ko-fi 支援原作者"/);
     assert.match(html, /assets\/ko-fi\.svg/);
     assert.match(icon, /<svg/);
     assert.match(icon, /Ko-fi/);

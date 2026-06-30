@@ -40,6 +40,11 @@ jobs:
         run: npm test
 
       - name: Fetch marketshare data
+        env:
+          FF14GILS_SERVER: Typhon
+          FF14GILS_WORLDS: Aegis,Atomos,Carbuncle,Garuda,Gungnir,Kujata,Tonberry,Typhon
+          FF14GILS_PERIODS: 1d,3d,7d
+          FF14GILS_ITEM_NAME_LANGUAGE: en
         run: npm run fetch:data
 
       - name: Build static site

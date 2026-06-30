@@ -1,11 +1,109 @@
 import { readCookieValue } from './preferences.js';
 
-export const DEFAULT_LANGUAGE = 'ja';
+export const DEFAULT_LANGUAGE = 'zh';
 export const LANGUAGE_COOKIE_NAME = 'ff14gils_language';
 export const LANGUAGE_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 180;
-export const SUPPORTED_LANGUAGES = ['ja', 'en'];
+export const SUPPORTED_LANGUAGES = ['zh', 'ja', 'en'];
 
 const TRANSLATIONS = {
+  zh: {
+    format: {
+      gilUnit: 'gil',
+    },
+    dataCenterRegions: {
+      europe: '歐洲資料中心',
+      japan: '日本資料中心',
+      northAmerica: '北美資料中心',
+      oceania: '大洋洲資料中心',
+      other: '其他資料中心',
+    },
+    meta: {
+      title: 'FF14Gils | FF14 市場賺錢看板',
+      description:
+        'FF14 繁體中文玩家用的市場看板，可從銷售額、價格與成交量找出適合販售的金策候選。',
+      ogDescription:
+        '從市場銷售量與價格趨勢找出比較容易賣出的金策候選。預設 Typhon，聚焦國際服資料。',
+      imageAlt: 'FF14Gils 繁體中文市場賺錢看板圖片',
+      locale: 'zh_TW',
+      inLanguage: 'zh-TW',
+    },
+    periods: {
+      '1d': '1 天',
+      '3d': '3 天',
+      '7d': '7 天',
+    },
+    recommendations: {
+      candidate: '候選',
+      hot: '熱門',
+      needsRestock: '補貨候選',
+      rising: '上升',
+      steady: '穩定',
+    },
+    results: {
+      count: '{count} 筆',
+    },
+    sort: {
+      avg: '平均價格',
+      marketValue: '銷售額',
+      minPrice: '最低價',
+      name: '道具名稱',
+      opportunityScore: '推薦度',
+      percentChange: '價格變化',
+      quantitySold: '成交量',
+      state: '狀態',
+    },
+    states: {
+      decreasing: '下跌',
+      increasing: '上升中',
+      out_of_stock: '缺貨',
+      spiking: '急漲',
+      stable: '穩定',
+      unknown: '未知',
+    },
+    table: {
+      avg: '平均價格',
+      item: '道具',
+      marketValue: '銷售額',
+      minPrice: '最低價',
+      percentChange: '價格變化',
+      quantitySold: '成交量',
+      rank: '排名',
+      state: '狀態',
+    },
+    ui: {
+      dataCenterLabel: '資料中心',
+      dataCenterSelect: '選擇資料中心',
+      emptyState: '沒有符合目前條件的道具。',
+      eyebrow: 'FF14 市場金策',
+      filterHelp: '選擇資料中心後會縮小世界清單。選過的世界下次會自動沿用。',
+      filterKicker: '條件',
+      filterPanelLabel: '篩選條件',
+      filterTitle: '篩選',
+      itemSearch: '道具搜尋',
+      kofiSupport: '在 Ko-fi 支援原作者',
+      languageLabel: '顯示語言',
+      languageSelect: '選擇顯示語言',
+      lead: '從市場銷售量與價格趨勢，找出比較容易賣出的金策候選。',
+      loadError: '資料讀取失敗：{message}',
+      minQuantity: '最低成交量',
+      missingContract: 'JSON 契約缺少欄位：{keys}',
+      otherDataCenter: '其他',
+      periodLabel: '統計期間',
+      periodSelect: '選擇銷售統計期間',
+      resultsKicker: '清單',
+      resultsLabel: '金策候選',
+      resultsTitle: '金策候選',
+      searchLabel: '道具搜尋',
+      searchPlaceholder: '英文名、日文名或 ID',
+      sortLabel: '排序',
+      stateLegend: '狀態',
+      updatedAt: '最後更新 {datetime}',
+      updatedAtUnknown: '最後更新 -',
+      worldLabel: '世界',
+      worldSelect: '選擇世界',
+      itemsNotArray: 'items 不是陣列',
+    },
+  },
   ja: {
     format: {
       gilUnit: 'ギル',
@@ -22,7 +120,7 @@ const TRANSLATIONS = {
       description:
         'FF14のマーケット売上、相場、販売数から、全DCの金策候補を探せるダークテーマのマーケットダッシュボードです。',
       ogDescription:
-        'マーケットの売れ行きと相場から、売りやすい金策候補を探せます。Hades初期表示、全DC対応。',
+        'マーケットの売れ行きと相場から、売りやすい金策候補を探せます。Typhon初期表示、国際版サーバー対応。',
       imageAlt: 'FF14Gilsのマーケット金策ダッシュボード画像',
       locale: 'ja_JP',
       inLanguage: 'ja-JP',
@@ -120,7 +218,7 @@ const TRANSLATIONS = {
       description:
         'A dark market dashboard for finding profitable Final Fantasy XIV items from sales, prices, and purchase volume across all data centers.',
       ogDescription:
-        'Find easier-to-sell market opportunities from sales volume and price trends. Starts on Hades and supports all data centers.',
+        'Find easier-to-sell market opportunities from sales volume and price trends. Starts on Typhon and uses global server data.',
       imageAlt: 'FF14Gils market profit dashboard image',
       locale: 'en_US',
       inLanguage: 'en-US',
@@ -237,13 +335,18 @@ export function translate(language, key, values = {}) {
 }
 
 export function localeForLanguage(language) {
-  return normalizeLanguage(language) === 'en' ? 'en-US' : 'ja-JP';
+  const normalizedLanguage = normalizeLanguage(language);
+
+  if (normalizedLanguage === 'en') return 'en-US';
+  if (normalizedLanguage === 'ja') return 'ja-JP';
+
+  return 'zh-TW';
 }
 
 export function selectItemDisplayName(item, language = DEFAULT_LANGUAGE) {
   const normalizedLanguage = normalizeLanguage(language);
 
-  if (normalizedLanguage === 'en') {
+  if (normalizedLanguage === 'en' || normalizedLanguage === 'zh') {
     return normalizeText(item?.nameEn) || normalizeText(item?.name) || normalizeText(item?.nameJa);
   }
 
@@ -254,7 +357,7 @@ export function selectItemAlternateName(item, language = DEFAULT_LANGUAGE) {
   const normalizedLanguage = normalizeLanguage(language);
   const displayName = selectItemDisplayName(item, normalizedLanguage);
   const alternateName =
-    normalizedLanguage === 'en'
+    normalizedLanguage === 'en' || normalizedLanguage === 'zh'
       ? normalizeText(item?.nameJa)
       : normalizeText(item?.nameEn);
 
@@ -279,9 +382,11 @@ export function recommendationLabel(level, language = DEFAULT_LANGUAGE) {
 }
 
 function parseLanguage(language) {
-  const value = String(language ?? '').trim().toLowerCase().split(/[-_]/)[0];
+  const value = String(language ?? '').trim().toLowerCase().replace('_', '-');
+  if (value === 'zh-tw' || value === 'zh-hant') return 'zh';
+  const languageCode = value.split('-')[0];
 
-  return SUPPORTED_LANGUAGES.includes(value) ? value : null;
+  return SUPPORTED_LANGUAGES.includes(languageCode) ? languageCode : null;
 }
 
 function getTranslationValue(source, key) {

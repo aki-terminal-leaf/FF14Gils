@@ -212,7 +212,7 @@ describe('data center helpers', () => {
 
 describe('resolveDefaultWorld', () => {
   it('指定がない場合は既定ワールドを優先する', () => {
-    assert.equal(resolveDefaultWorld(['Aegis', 'Carbuncle', 'Hades']), 'Hades');
+    assert.equal(resolveDefaultWorld(['Aegis', 'Carbuncle', 'Typhon']), 'Typhon');
   });
 
   it('環境変数で指定されたワールドが一覧にあればそれを優先する', () => {
