@@ -80,11 +80,12 @@ npm run serve
 - `FF14GILS_WORLDS`：要產生的世界清單，使用逗號分隔。未指定時會產生 8 個繁中服世界。
 - `FF14GILS_PERIODS`：要產生的銷售期間，可用 `1d`、`3d`、`7d`。
 - `FF14GILS_ITEM_NAME_LANGUAGE`：道具資料語系，繁中服版預設 `tc`，也接受 `zh-TW`。
-- `FF14GILS_ITEM_LIMIT`：每個世界查詢的可交易 item ID 數量，預設 300。
-- `FF14GILS_MAX_ITEMS`：每個快照保留的推薦 item 數量，預設 300。
+- `FF14GILS_ITEM_LIMIT`：每個世界查詢的可交易 item ID 數量，預設 300；設為 `all` / `full` / `*` 時會掃描 Universalis 可交易清單中有繁中名稱的全部 item。
+- `FF14GILS_MAX_ITEMS`：每個快照保留的推薦 item 數量，預設 300；完整掃描 workflow 會保留前 1000 筆推薦。
 - `FF14GILS_FETCH_RETRIES`：外部 API 暫時性 `429` / `5xx` 回應的重試次數。
 - `FF14GILS_FETCH_RETRY_DELAY_MS`：外部 API 重試的初始等待時間。
+- `FF14GILS_FETCH_CHUNK_DELAY_MS`：完整掃描時每批 Universalis aggregated request 之間的等待時間，避免短時間大量請求。
 
 ## 部署
 
-`.github/workflows/pages.yml` 會執行 `npm test`、`npm run fetch:data`、`npm run build`，並將 `dist/` 部署到 GitHub Pages。繁中服版 workflow 已預設使用 `陸行鳥` DC 與 `伊弗利特` 初始世界。
+`.github/workflows/pages.yml` 會執行 `npm test`、`npm run fetch:data`、`npm run build`，並將 `dist/` 部署到 GitHub Pages。繁中服版 workflow 已預設使用 `陸行鳥` DC 與 `伊弗利特` 初始世界，並每小時做一次完整 marketable item 掃描。

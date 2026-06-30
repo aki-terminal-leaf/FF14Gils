@@ -3,7 +3,7 @@ name: Deploy GitHub Pages
 on:
   workflow_dispatch:
   schedule:
-    - cron: '3-59/10 * * * *'
+    - cron: '17 * * * *'
   push:
     branches:
       - master
@@ -46,8 +46,9 @@ jobs:
           FF14GILS_WORLDS: 伊弗利特,迦樓羅,利維坦,鳳凰,奧汀,巴哈姆特,拉姆,泰坦
           FF14GILS_PERIODS: 1d,3d,7d
           FF14GILS_ITEM_NAME_LANGUAGE: tc
-          FF14GILS_ITEM_LIMIT: 300
-          FF14GILS_MAX_ITEMS: 300
+          FF14GILS_ITEM_LIMIT: all
+          FF14GILS_MAX_ITEMS: 1000
+          FF14GILS_FETCH_CHUNK_DELAY_MS: 100
         run: npm run fetch:data
 
       - name: Build static site

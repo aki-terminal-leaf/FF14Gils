@@ -43,6 +43,7 @@ const retryOptions = {
   retries: Number(process.env.FF14GILS_FETCH_RETRIES ?? 3),
   baseDelayMs: Number(process.env.FF14GILS_FETCH_RETRY_DELAY_MS ?? 1000),
 };
+const chunkDelayMs = Number(process.env.FF14GILS_FETCH_CHUNK_DELAY_MS ?? 0);
 const worlds = parseWorldList(process.env.FF14GILS_WORLDS);
 const periods = parseSalesPeriodList(process.env.FF14GILS_PERIODS);
 const query = {
@@ -53,7 +54,7 @@ const query = {
   filters: [0],
 };
 const maxItems = Number(process.env.FF14GILS_MAX_ITEMS ?? DEFAULT_MAX_ITEMS);
-const itemLimit = Number(process.env.FF14GILS_ITEM_LIMIT ?? DEFAULT_MAX_ITEMS);
+const itemLimit = parseItemLimit(process.env.FF14GILS_ITEM_LIMIT);
 const defaultWorld = resolveDefaultWorld(worlds, process.env.FF14GILS_SERVER);
 
 const itemData = await loadItemData();
@@ -62,12 +63,17 @@ const itemIds = selectItemIds(marketableItemIds, itemData, itemLimit);
 const itemNames = await resolveItemNames(itemIds, itemData);
 const marketshareResults = [];
 
+console.log(`Scanning ${itemIds.length} marketable items across ${worlds.length} worlds`);
+
 for (const world of worlds) {
+  const results = await fetchWorldAggregatedRows(world, itemIds);
+  console.log(`Fetched ${results.length} Universalis aggregated rows for ${world}`);
+
   for (const period of periods) {
-    const result = await fetchWorldMarketshare(world, period, itemIds, itemNames, itemData);
+    const result = createWorldMarketshare(world, period, results, itemNames, itemData);
     marketshareResults.push(result);
     console.log(
-      `Fetched ${result.apiResponse.data.length} Universalis items for ${world} (${period.label})`,
+      `Prepared ${result.apiResponse.data.length} recommendation items for ${world} (${period.label})`,
     );
   }
 }
@@ -148,15 +154,26 @@ async function fetchMarketableItemIds() {
   return normalizeItemIds(await response.json());
 }
 
+function parseItemLimit(value) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return DEFAULT_MAX_ITEMS;
+  if (['all', 'full', '*'].includes(normalized)) return Infinity;
+
+  const limit = Number(normalized);
+  return Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_MAX_ITEMS;
+}
+
 function selectItemIds(marketableItemIds, itemData, limit) {
   const candidates = marketableItemIds.filter((itemId) => itemData[String(itemId)]);
+  if (limit === Infinity) return candidates;
   return candidates.slice(0, Math.max(1, Number(limit) || DEFAULT_MAX_ITEMS));
 }
 
-async function fetchWorldMarketshare(world, period, itemIds, itemNames, itemData) {
+async function fetchWorldAggregatedRows(world, itemIds) {
   const results = [];
 
-  for (const chunk of chunkItemIds(itemIds)) {
+  const chunks = chunkItemIds(itemIds);
+  for (const [index, chunk] of chunks.entries()) {
     const url = buildUniversalisAggregatedUrl(world, chunk);
     const response = await fetchWithRetry(
       url,
@@ -174,8 +191,16 @@ async function fetchWorldMarketshare(world, period, itemIds, itemNames, itemData
 
     const payload = await response.json();
     results.push(...(Array.isArray(payload?.results) ? payload.results : []));
+
+    if (chunkDelayMs > 0 && index < chunks.length - 1) {
+      await sleep(chunkDelayMs);
+    }
   }
 
+  return results;
+}
+
+function createWorldMarketshare(world, period, results, itemNames, itemData) {
   const apiResponse = normalizeUniversalisAggregatedResponse(
     { results },
     {
@@ -195,9 +220,16 @@ async function fetchWorldMarketshare(world, period, itemIds, itemNames, itemData
       periodKey: period.key,
       periodLabel: period.label,
       timePeriod: period.hours,
+      scannedItemCount: results.length,
     },
     apiResponse,
   };
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function resolveItemNames(itemIds, itemData) {

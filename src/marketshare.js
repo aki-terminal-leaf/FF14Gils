@@ -200,6 +200,7 @@ export function createSnapshot({
       preset: query.preset,
       sortBy: query.sortBy,
       filters: query.filters,
+      scannedItemCount: query.scannedItemCount,
     },
     summary,
     items,

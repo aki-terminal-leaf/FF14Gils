@@ -239,14 +239,25 @@ describe('app data loading contract', () => {
     assert.ok(workflow.indexOf('run: npm test') < workflow.indexOf('run: npm run fetch:data'));
   });
 
-  it('Pages workflowはAPIデータを10分ごとに更新する', async () => {
+  it('Pages workflowはAPIデータを毎時更新する', async () => {
     const workflow = await readFile(
       new URL('../.github/workflows/pages.yml', import.meta.url),
       'utf8',
     );
 
-    assert.match(workflow, /cron:\s*['"]3-59\/10 \* \* \* \*['"]/);
+    assert.match(workflow, /cron:\s*['"]17 \* \* \* \*['"]/);
     assert.ok(workflow.indexOf('run: npm run fetch:data') < workflow.indexOf('run: npm run build'));
+  });
+
+  it('Pages workflowは繁中服の全marketable itemを掃描する', async () => {
+    const workflow = await readFile(
+      new URL('../.github/workflows/pages.yml', import.meta.url),
+      'utf8',
+    );
+
+    assert.match(workflow, /FF14GILS_ITEM_LIMIT:\s*all/);
+    assert.match(workflow, /FF14GILS_MAX_ITEMS:\s*1000/);
+    assert.match(workflow, /FF14GILS_FETCH_CHUNK_DELAY_MS:\s*100/);
   });
 
   it('データ生成の既定カテゴリは全般にする', async () => {
@@ -268,9 +279,12 @@ describe('app data loading contract', () => {
 
     assert.match(script, /UNIVERSALIS_MARKETABLE_ENDPOINT/);
     assert.match(script, /normalizeUniversalisAggregatedResponse/);
+    assert.match(script, /parseItemLimit/);
+    assert.match(script, /fetchWorldAggregatedRows/);
     assert.doesNotMatch(script, /entriesWithin/i);
     assert.match(readme, /Universalis API/);
     assert.match(readme, /繁體中文伺服器/);
+    assert.match(readme, /完整 marketable item 掃描/);
     assert.doesNotMatch(readme, /30 day history/i);
     assert.doesNotMatch(readme, /30d/);
   });
